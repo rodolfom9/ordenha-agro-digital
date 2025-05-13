@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { mockLogin } from "@/utils/mockData";
 import { Milk } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const LoginForm = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
+    if (!email || !password) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos",
@@ -31,22 +31,28 @@ const LoginForm = () => {
     setIsLoading(true);
     
     try {
-      const user = await mockLogin(username, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // In a real app, we would store the user in a global state/context
-      localStorage.setItem("user", JSON.stringify(user));
+      if (error) {
+        throw error;
+      }
+      
+      const user = data.user;
       localStorage.setItem("isAuthenticated", "true");
       
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${user.name}!`,
+        description: `Bem-vindo, ${user.email}!`,
       });
       
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro de autenticação",
-        description: "Usuário ou senha inválidos",
+        description: error?.message || "Usuário ou senha inválidos",
         variant: "destructive",
       });
     } finally {
@@ -69,12 +75,13 @@ const LoginForm = () => {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                placeholder="Digite seu usuário"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Digite seu email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
               />
             </div>
@@ -101,7 +108,7 @@ const LoginForm = () => {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Use admin/admin para testar
+          Use seu email e senha cadastrados no sistema
         </p>
       </CardFooter>
     </Card>

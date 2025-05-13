@@ -4,20 +4,31 @@ import { Button } from "@/components/ui/button";
 import { User } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { Milk } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          username: data.user.email || '',
+          name: data.user.email?.split('@')[0] || 'Usuário',
+          role: 'user'
+        });
+      }
+    };
+
+    getUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("isAuthenticated");
     navigate("/login");
   };
