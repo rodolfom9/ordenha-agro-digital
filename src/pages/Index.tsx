@@ -1,8 +1,7 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Milk } from "lucide-react";
+import { Milk, ShoppingCart, BarChart } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
