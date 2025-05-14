@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import RevenueChart from "@/components/charts/RevenueChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/lib/supabase";
 
 // Create some additional data for reports
 const categoryExpenses = [
@@ -31,6 +32,80 @@ const monthlyProduction = [
 
 const Reports = () => {
   const [timeFrame, setTimeFrame] = useState("month");
+  const [loading, setLoading] = useState(true);
+  const [prodByMonth, setProdByMonth] = useState<any[]>([]);
+  const [prodVsSales, setProdVsSales] = useState<any[]>([]);
+  const [expensesByCategory, setExpensesByCategory] = useState<any[]>([]);
+  const [financeChart, setFinanceChart] = useState<any[]>([]);
+  const [summary, setSummary] = useState({ receita: 0, despesas: 0, lucro: 0 });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      // Buscar produção
+      const { data: productions } = await supabase.from("production").select("date, quantity");
+      // Buscar vendas
+      const { data: sales } = await supabase.from("sales").select("date, value");
+      // Buscar despesas
+      const { data: expenses } = await supabase.from("expenses").select("date, value, description");
+
+      // Produção mensal
+      const prodMonth: Record<string, number> = {};
+      productions?.forEach((p) => {
+        const month = p.date?.slice(0, 7); // yyyy-mm
+        prodMonth[month] = (prodMonth[month] || 0) + (p.quantity || 0);
+      });
+      setProdByMonth(Object.entries(prodMonth).map(([label, value]) => ({ label, value })));
+
+      // Produção vs Vendas por mês
+      const salesMonth: Record<string, number> = {};
+      sales?.forEach((s) => {
+        const month = s.date?.slice(0, 7);
+        const value = Number(s.value) || 0;
+        salesMonth[month] = (salesMonth[month] || 0) + value;
+      });
+      const allMonths = Array.from(new Set([...Object.keys(prodMonth), ...Object.keys(salesMonth)])).sort();
+      setProdVsSales(allMonths.map((month) => ({
+        label: month,
+        producao: prodMonth[month] || 0,
+        vendas: salesMonth[month] || 0,
+      })));
+
+      // Despesas por categoria (usando description como categoria)
+      const expCat: Record<string, number> = {};
+      expenses?.forEach((e) => {
+        const cat = e.description || "Outros";
+        const value = Number(e.value) || 0;
+        expCat[cat] = (expCat[cat] || 0) + value;
+      });
+      setExpensesByCategory(Object.entries(expCat).map(([label, value]) => ({ label, value })));
+
+      // Receitas vs Despesas por mês
+      const expensesMonth: Record<string, number> = {};
+      expenses?.forEach((e) => {
+        const month = e.date?.slice(0, 7);
+        const value = Number(e.value) || 0;
+        expensesMonth[month] = (expensesMonth[month] || 0) + value;
+      });
+      setFinanceChart(allMonths.map((month) => ({
+        label: month,
+        receitas: salesMonth[month] || 0,
+        despesas: expensesMonth[month] || 0,
+      })));
+
+      // Resumo financeiro (últimos 30 dias)
+      const now = new Date();
+      const last30 = (d: string) => {
+        const dt = new Date(d);
+        return (now.getTime() - dt.getTime()) / (1000 * 60 * 60 * 24) <= 30;
+      };
+      const receita = sales?.filter((s) => last30(s.date)).reduce((acc, s) => acc + (Number(s.value) || 0), 0) || 0;
+      const despesas = expenses?.filter((e) => last30(e.date)).reduce((acc, e) => acc + (Number(e.value) || 0), 0) || 0;
+      setSummary({ receita, despesas, lucro: receita - despesas });
+      setLoading(false);
+    };
+    fetchData();
+  }, [timeFrame]);
 
   return (
     <Layout>
@@ -73,13 +148,13 @@ const Reports = () => {
           <RevenueChart
             title="Produção Mensal"
             subtitle="Total de leite produzido por mês"
-            data={[]}
+            data={prodByMonth}
             type="line"
           />
           <RevenueChart
             title="Produção vs Vendas"
             subtitle="Comparação entre produção e vendas"
-            data={[]}
+            data={prodVsSales}
             type="area"
           />
         </div>
@@ -88,13 +163,13 @@ const Reports = () => {
           <RevenueChart
             title="Distribuição de Despesas"
             subtitle="Despesas por categoria"
-            data={categoryExpenses}
+            data={expensesByCategory}
             type="pie"
           />
           <RevenueChart
             title="Receitas vs Despesas"
             subtitle="Comparação entre receitas e despesas"
-            data={[]}
+            data={financeChart}
             type="bar"
           />
         </div>
@@ -108,21 +183,21 @@ const Reports = () => {
               <div className="bg-blue-50 p-4 rounded-lg text-center">
                 <h3 className="text-sm font-medium text-gray-500">Receita Total</h3>
                 <p className="text-2xl font-semibold text-farm-blue">
-                  R$ 12.500,00
+                  R$ {summary.receita.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500">Últimos 30 dias</p>
               </div>
               <div className="bg-red-50 p-4 rounded-lg text-center">
                 <h3 className="text-sm font-medium text-gray-500">Despesas Totais</h3>
                 <p className="text-2xl font-semibold text-red-500">
-                  R$ 5.320,00
+                  R$ {summary.despesas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500">Últimos 30 dias</p>
               </div>
               <div className="bg-green-50 p-4 rounded-lg text-center">
                 <h3 className="text-sm font-medium text-gray-500">Lucro Líquido</h3>
                 <p className="text-2xl font-semibold text-farm-green">
-                  R$ 7.180,00
+                  R$ {summary.lucro.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500">Últimos 30 dias</p>
               </div>
