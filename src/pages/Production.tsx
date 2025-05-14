@@ -1,26 +1,54 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import ProductionForm from "@/components/milk/ProductionForm";
 import ProductionList from "@/components/milk/ProductionList";
 import { MilkProduction } from "@/types";
-import { mockProductions } from "@/utils/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 const Production = () => {
   const [productions, setProductions] = useState<MilkProduction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setProductions(mockProductions);
+    const fetchProductions = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from("production").select("*").order("date", { ascending: false });
+      if (error) {
+        toast({
+          title: "Erro ao carregar produções",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setProductions(data || []);
+      }
       setIsLoading(false);
-    }, 1000);
-  }, []);
+    };
+    fetchProductions();
+  }, [toast]);
 
   const handleAddProduction = (production: MilkProduction) => {
     setProductions((prev) => [production, ...prev]);
+  };
+
+  const handleDeleteProduction = async (id: string) => {
+    const { error } = await supabase.from("production").delete().eq("id", id);
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setProductions((prev) => prev.filter((p) => p.id !== id));
+    toast({
+      title: "Produção excluída",
+      description: "Registro removido com sucesso.",
+    });
   };
 
   return (
@@ -47,7 +75,7 @@ const Production = () => {
                     <p>Carregando registros...</p>
                   </div>
                 ) : (
-                  <ProductionList productions={productions} />
+                  <ProductionList productions={productions} onDelete={handleDeleteProduction} />
                 )}
               </CardContent>
             </Card>

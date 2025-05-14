@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Expense } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 interface ExpenseFormProps {
   onAddExpense: (expense: Expense) => void;

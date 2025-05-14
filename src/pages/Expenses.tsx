@@ -1,27 +1,55 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import ExpenseForm from "@/components/finance/ExpenseForm";
 import ExpenseList from "@/components/finance/ExpenseList";
 import RevenueChart from "@/components/charts/RevenueChart";
 import { Expense } from "@/types";
-import { mockExpenses, mockExpensesChartData } from "@/utils/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setExpenses(mockExpenses);
+    const fetchExpenses = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from("expenses").select("*").order("date", { ascending: false });
+      if (error) {
+        toast({
+          title: "Erro ao carregar despesas",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setExpenses(data || []);
+      }
       setIsLoading(false);
-    }, 1000);
-  }, []);
+    };
+    fetchExpenses();
+  }, [toast]);
 
   const handleAddExpense = (expense: Expense) => {
     setExpenses((prev) => [expense, ...prev]);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    toast({
+      title: "Despesa excluída",
+      description: "Registro removido com sucesso.",
+    });
   };
 
   return (
@@ -48,7 +76,7 @@ const Expenses = () => {
                     <p>Carregando registros...</p>
                   </div>
                 ) : (
-                  <ExpenseList expenses={expenses} />
+                  <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
                 )}
               </CardContent>
             </Card>
@@ -56,7 +84,7 @@ const Expenses = () => {
             <RevenueChart 
               title="Despesas Recentes"
               subtitle="Despesas diárias dos últimos 5 dias"
-              data={mockExpensesChartData}
+              data={[]}
               type="bar"
             />
           </div>

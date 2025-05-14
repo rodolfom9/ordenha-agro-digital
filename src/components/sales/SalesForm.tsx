@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sale } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 interface SalesFormProps {
   onAddSale: (sale: Sale) => void;
@@ -28,7 +28,7 @@ const SalesForm = ({ onAddSale }: SalesFormProps) => {
     return "0.00";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!date || !quantity || !pricePerLiter || !buyer) {
@@ -42,33 +42,46 @@ const SalesForm = ({ onAddSale }: SalesFormProps) => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newSale: Sale = {
-        id: `s${Date.now()}`,
-        date,
-        quantity: Number(quantity),
-        pricePerLiter: Number(pricePerLiter),
-        totalAmount: Number(calculateTotal()),
-        buyer,
-        notes: notes || undefined,
-      };
-      
-      onAddSale(newSale);
-      
+    const totalAmount = Number(quantity) * Number(pricePerLiter);
+    const { data, error } = await supabase.from("sales").insert({
+      date,
+      quantity: Number(quantity),
+      price_per_liter: Number(pricePerLiter),
+      total_amount: totalAmount,
+      buyer,
+      notes: notes || null,
+    }).select().single();
+    
+    if (error) {
+      toast({
+        title: "Erro ao registrar venda",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    if (data) {
+      onAddSale({
+        id: data.id,
+        date: data.date,
+        quantity: data.quantity,
+        pricePerLiter: data.price_per_liter,
+        totalAmount: data.total_amount,
+        buyer: data.buyer,
+        notes: data.notes,
+      });
       toast({
         title: "Sucesso",
         description: "Venda registrada com sucesso",
       });
-      
-      // Reset form
       setDate("");
       setQuantity("");
       setPricePerLiter("");
       setBuyer("");
       setNotes("");
-      setIsLoading(false);
-    }, 500);
+    }
+    setIsLoading(false);
   };
 
   return (

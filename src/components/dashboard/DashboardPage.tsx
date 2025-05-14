@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import StatCard from "./StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +27,7 @@ import {
   Bar,
   Legend 
 } from "recharts";
+import { supabase } from "@/lib/supabase";
 
 const combinedChartData = mockProductionChartData.map((item, index) => ({
   name: item.label,
@@ -39,13 +39,81 @@ const combinedChartData = mockProductionChartData.map((item, index) => ({
 const DashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [productionChart, setProductionChart] = useState<any[]>([]);
+  const [financeChart, setFinanceChart] = useState<any[]>([]);
 
   useEffect(() => {
-    // In a real app, we would fetch this data from an API
-    setTimeout(() => {
-      setStats(mockDashboardStats);
+    const fetchData = async () => {
+      setIsLoading(true);
+      // Buscar produções dos últimos 30 dias
+      const { data: productions, error: prodError } = await supabase
+        .from("production")
+        .select("date, quantity")
+        .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+      // Buscar vendas dos últimos 30 dias
+      const { data: sales, error: salesError } = await supabase
+        .from("sales")
+        .select("date, quantity, total_amount")
+        .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+      // Buscar despesas dos últimos 30 dias
+      const { data: expenses, error: expError } = await supabase
+        .from("expenses")
+        .select("date, amount")
+        .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+
+      if (prodError || salesError || expError) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Cálculos dos cards
+      const totalProduction = productions?.reduce((acc, p) => acc + (p.quantity || 0), 0) || 0;
+      const averageDailyProduction = productions && productions.length > 0 ? (totalProduction / 30) : 0;
+      const totalSales = sales?.reduce((acc, s) => acc + (s.quantity || 0), 0) || 0;
+      const totalRevenue = sales?.reduce((acc, s) => acc + (s.total_amount || 0), 0) || 0;
+      const totalExpenses = expenses?.reduce((acc, e) => acc + (e.amount || 0), 0) || 0;
+      const netProfit = totalRevenue - totalExpenses;
+
+      setStats({
+        totalProduction,
+        averageDailyProduction,
+        totalSales,
+        totalRevenue,
+        totalExpenses,
+        netProfit,
+      });
+
+      // Gráfico de produção diária
+      const prodByDate: Record<string, number> = {};
+      productions?.forEach((p) => {
+        prodByDate[p.date] = (prodByDate[p.date] || 0) + (p.quantity || 0);
+      });
+      const prodChart = Object.entries(prodByDate).map(([date, value]) => ({ label: date, value }));
+      setProductionChart(prodChart);
+
+      // Gráfico de receitas vs despesas por data
+      const salesByDate: Record<string, number> = {};
+      sales?.forEach((s) => {
+        salesByDate[s.date] = (salesByDate[s.date] || 0) + (s.total_amount || 0);
+      });
+      const expensesByDate: Record<string, number> = {};
+      expenses?.forEach((e) => {
+        expensesByDate[e.date] = (expensesByDate[e.date] || 0) + (e.amount || 0);
+      });
+      const allDates = Array.from(new Set([
+        ...Object.keys(salesByDate),
+        ...Object.keys(expensesByDate),
+      ])).sort();
+      const financeChartData = allDates.map((date) => ({
+        name: date,
+        vendas: salesByDate[date] || 0,
+        despesas: expensesByDate[date] || 0,
+      }));
+      setFinanceChart(financeChartData);
+
       setIsLoading(false);
-    }, 1000);
+    };
+    fetchData();
   }, []);
 
   if (isLoading) {
@@ -82,7 +150,7 @@ const DashboardPage = () => {
         />
         <StatCard
           title="Média Diária"
-          value={`${stats.averageDailyProduction} L`}
+          value={`${stats.averageDailyProduction.toFixed(2)} L`}
           description="Últimos 30 dias"
           icon={<TrendingUp className="h-5 w-5 text-farm-blue" />}
         />
@@ -108,7 +176,7 @@ const DashboardPage = () => {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockProductionChartData}>
+                <LineChart data={productionChart}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" />
                   <YAxis />
@@ -133,7 +201,7 @@ const DashboardPage = () => {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={combinedChartData}>
+                <BarChart data={financeChart}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />

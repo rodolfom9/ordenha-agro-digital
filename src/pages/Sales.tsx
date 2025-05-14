@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import SalesForm from "@/components/sales/SalesForm";
@@ -7,21 +6,51 @@ import RevenueChart from "@/components/charts/RevenueChart";
 import { Sale } from "@/types";
 import { mockSales, mockSalesChartData } from "@/utils/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 const Sales = () => {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setSales(mockSales);
+    const fetchSales = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.from("sales").select("*").order("date", { ascending: false });
+      if (error) {
+        toast({
+          title: "Erro ao carregar vendas",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setSales(data || []);
+      }
       setIsLoading(false);
-    }, 1000);
-  }, []);
+    };
+    fetchSales();
+  }, [toast]);
 
   const handleAddSale = (sale: Sale) => {
     setSales((prev) => [sale, ...prev]);
+  };
+
+  const handleDeleteSale = async (id: string) => {
+    const { error } = await supabase.from("sales").delete().eq("id", id);
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setSales((prev) => prev.filter((s) => s.id !== id));
+    toast({
+      title: "Venda excluída",
+      description: "Registro removido com sucesso.",
+    });
   };
 
   return (
@@ -48,7 +77,7 @@ const Sales = () => {
                     <p>Carregando registros...</p>
                   </div>
                 ) : (
-                  <SalesList sales={sales} />
+                  <SalesList sales={sales} onDelete={handleDeleteSale} />
                 )}
               </CardContent>
             </Card>
@@ -56,7 +85,7 @@ const Sales = () => {
             <RevenueChart 
               title="Receitas Recentes"
               subtitle="Receita diária dos últimos 5 dias"
-              data={mockSalesChartData}
+              data={[]}
               type="bar"
             />
           </div>

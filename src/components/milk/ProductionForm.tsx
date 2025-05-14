@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MilkProduction } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 interface ProductionFormProps {
   onAddProduction: (production: MilkProduction) => void;
@@ -28,7 +28,7 @@ const ProductionForm = ({ onAddProduction }: ProductionFormProps) => {
   
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!date || !quantity || !cowCount || !quality) {
@@ -42,32 +42,44 @@ const ProductionForm = ({ onAddProduction }: ProductionFormProps) => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newProduction: MilkProduction = {
-        id: `p${Date.now()}`,
-        date,
-        quantity: Number(quantity),
-        cowCount: Number(cowCount),
-        quality: quality as "A" | "B" | "C",
-        notes: notes || undefined,
-      };
-      
-      onAddProduction(newProduction);
-      
+    const { data, error } = await supabase.from("production").insert({
+      date,
+      quantity: Number(quantity),
+      cow_count: Number(cowCount),
+      quality,
+      notes: notes || null,
+    }).select().single();
+    
+    if (error) {
+      toast({
+        title: "Erro ao registrar produção",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    if (data) {
+      // Ajustar para o formato esperado pelo sistema
+      onAddProduction({
+        id: data.id,
+        date: data.date,
+        quantity: data.quantity,
+        cowCount: data.cow_count,
+        quality: data.quality,
+        notes: data.notes,
+      });
       toast({
         title: "Sucesso",
         description: "Produção registrada com sucesso",
       });
-      
-      // Reset form
       setDate("");
       setQuantity("");
       setCowCount("");
       setQuality("");
       setNotes("");
-      setIsLoading(false);
-    }, 500);
+    }
+    setIsLoading(false);
   };
 
   return (
