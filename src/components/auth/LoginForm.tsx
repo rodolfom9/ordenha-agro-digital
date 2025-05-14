@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -37,10 +36,16 @@ const LoginForm = () => {
       });
       
       if (error) {
+        localStorage.removeItem("isAuthenticated");
         throw error;
       }
       
       const user = data.user;
+      if (!user) {
+        localStorage.removeItem("isAuthenticated");
+        throw new Error("Usuário não encontrado");
+      }
+      
       localStorage.setItem("isAuthenticated", "true");
       
       toast({
@@ -50,6 +55,7 @@ const LoginForm = () => {
       
       navigate("/dashboard");
     } catch (error: any) {
+      localStorage.removeItem("isAuthenticated");
       toast({
         title: "Erro de autenticação",
         description: error?.message || "Usuário ou senha inválidos",

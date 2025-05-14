@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
@@ -15,16 +14,36 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      
-      if (!data.session) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+        
+        if (!data.session || !isAuthenticated) {
+          localStorage.removeItem("isAuthenticated");
+          navigate("/login");
+          return;
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
+        localStorage.removeItem("isAuthenticated");
         navigate("/login");
       }
-      
-      setIsLoading(false);
     };
 
     checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        localStorage.removeItem("isAuthenticated");
+        navigate("/login");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (isLoading) {
