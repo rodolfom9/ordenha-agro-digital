@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -50,7 +49,7 @@ const Sidebar = () => {
       <div className="p-6">
         <div className="flex items-center gap-2">
           <Milk className="h-6 w-6 text-farm-green" />
-          <span className="font-semibold">Farm Milk Monitor</span>
+          <span className="font-semibold">RMCGEO</span>
         </div>
       </div>
       <nav className="flex-1 px-4 py-2">
@@ -75,7 +74,7 @@ const Sidebar = () => {
       </nav>
       <div className="p-4 border-t">
         <p className="text-xs text-center text-muted-foreground">
-          Farm Milk Monitor © 2023
+          RMCGEO © 2023
         </p>
       </div>
     </aside>

@@ -1,12 +1,6 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import RevenueChart from "@/components/charts/RevenueChart";
-import { 
-  mockProductionChartData, 
-  mockSalesChartData, 
-  mockExpensesChartData 
-} from "@/utils/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Select,
@@ -79,13 +73,13 @@ const Reports = () => {
           <RevenueChart
             title="Produção Mensal"
             subtitle="Total de leite produzido por mês"
-            data={monthlyProduction}
+            data={[]}
             type="line"
           />
           <RevenueChart
             title="Produção vs Vendas"
             subtitle="Comparação entre produção e vendas"
-            data={mockProductionChartData}
+            data={[]}
             type="area"
           />
         </div>
@@ -100,7 +94,7 @@ const Reports = () => {
           <RevenueChart
             title="Receitas vs Despesas"
             subtitle="Comparação entre receitas e despesas"
-            data={mockSalesChartData}
+            data={[]}
             type="bar"
           />
         </div>

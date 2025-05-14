@@ -18,7 +18,7 @@ interface ExpenseFormProps {
 }
 
 const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10));
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<
     "feed" | "medication" | "equipment" | "labor" | "other" | ""
@@ -28,7 +28,7 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
 
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!date || !amount || !category || !description) {
@@ -42,30 +42,44 @@ const ExpenseForm = ({ onAddExpense }: ExpenseFormProps) => {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const newExpense: Expense = {
-        id: `e${Date.now()}`,
+    try {
+      const { data, error } = await supabase.from("expenses").insert({
         date,
-        amount: Number(amount),
-        category: category as "feed" | "medication" | "equipment" | "labor" | "other",
         description,
-      };
+        value: Number(amount),
+        notes: null,
+      }).select().single();
 
-      onAddExpense(newExpense);
+      if (data) {
+        onAddExpense({
+          id: data.id,
+          date: data.date,
+          amount: data.value,
+          category: category as "feed" | "medication" | "equipment" | "labor" | "other",
+          description: data.description,
+        });
 
+        toast({
+          title: "Sucesso",
+          description: "Despesa registrada com sucesso",
+        });
+
+        // Reset form
+        setDate("");
+        setAmount("");
+        setCategory("");
+        setDescription("");
+        setIsLoading(false);
+      }
+    } catch (error) {
       toast({
-        title: "Sucesso",
-        description: "Despesa registrada com sucesso",
+        title: "Erro",
+        description: "Ocorreu um erro ao registrar a despesa",
+        variant: "destructive",
       });
-
-      // Reset form
-      setDate("");
-      setAmount("");
-      setCategory("");
-      setDescription("");
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (

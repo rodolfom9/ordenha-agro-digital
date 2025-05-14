@@ -8,12 +8,6 @@ import {
   CreditCard, 
   DollarSign 
 } from "lucide-react";
-import { 
-  mockDashboardStats, 
-  mockProductionChartData, 
-  mockSalesChartData, 
-  mockExpensesChartData 
-} from "@/utils/mockData";
 import { DashboardStats } from "@/types";
 import { 
   LineChart, 
@@ -28,13 +22,6 @@ import {
   Legend 
 } from "recharts";
 import { supabase } from "@/lib/supabase";
-
-const combinedChartData = mockProductionChartData.map((item, index) => ({
-  name: item.label,
-  producao: item.value,
-  vendas: mockSalesChartData[index]?.value || 0,
-  despesas: mockExpensesChartData[index]?.value || 0
-}));
 
 const DashboardPage = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -53,12 +40,12 @@ const DashboardPage = () => {
       // Buscar vendas dos últimos 30 dias
       const { data: sales, error: salesError } = await supabase
         .from("sales")
-        .select("date, quantity, total_amount")
+        .select("date, quantity, value")
         .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
       // Buscar despesas dos últimos 30 dias
       const { data: expenses, error: expError } = await supabase
         .from("expenses")
-        .select("date, amount")
+        .select("date, value")
         .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
 
       if (prodError || salesError || expError) {
@@ -70,8 +57,8 @@ const DashboardPage = () => {
       const totalProduction = productions?.reduce((acc, p) => acc + (p.quantity || 0), 0) || 0;
       const averageDailyProduction = productions && productions.length > 0 ? (totalProduction / 30) : 0;
       const totalSales = sales?.reduce((acc, s) => acc + (s.quantity || 0), 0) || 0;
-      const totalRevenue = sales?.reduce((acc, s) => acc + (s.total_amount || 0), 0) || 0;
-      const totalExpenses = expenses?.reduce((acc, e) => acc + (e.amount || 0), 0) || 0;
+      const totalRevenue = sales?.reduce((acc, s) => acc + (s.value || 0), 0) || 0;
+      const totalExpenses = expenses?.reduce((acc, e) => acc + (e.value || 0), 0) || 0;
       const netProfit = totalRevenue - totalExpenses;
 
       setStats({
@@ -94,11 +81,11 @@ const DashboardPage = () => {
       // Gráfico de receitas vs despesas por data
       const salesByDate: Record<string, number> = {};
       sales?.forEach((s) => {
-        salesByDate[s.date] = (salesByDate[s.date] || 0) + (s.total_amount || 0);
+        salesByDate[s.date] = (salesByDate[s.date] || 0) + (s.value || 0);
       });
       const expensesByDate: Record<string, number> = {};
       expenses?.forEach((e) => {
-        expensesByDate[e.date] = (expensesByDate[e.date] || 0) + (e.amount || 0);
+        expensesByDate[e.date] = (expensesByDate[e.date] || 0) + (e.value || 0);
       });
       const allDates = Array.from(new Set([
         ...Object.keys(salesByDate),
@@ -168,6 +155,36 @@ const DashboardPage = () => {
         />
       </div>
 
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg text-center">
+                <h3 className="text-sm font-medium text-gray-500">Receita Total</h3>
+                <p className="text-2xl font-semibold text-farm-blue">
+                  R$ {stats.totalRevenue.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-red-50 p-4 rounded-lg text-center">
+                <h3 className="text-sm font-medium text-gray-500">Despesas Totais</h3>
+                <p className="text-2xl font-semibold text-red-500">
+                  R$ {stats.totalExpenses.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg text-center">
+                <h3 className="text-sm font-medium text-gray-500">Lucro Líquido</h3>
+                <p className="text-2xl font-semibold text-farm-green">
+                  R$ {stats.netProfit.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -221,36 +238,6 @@ const DashboardPage = () => {
                   />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo Financeiro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg text-center">
-                <h3 className="text-sm font-medium text-gray-500">Receita Total</h3>
-                <p className="text-2xl font-semibold text-farm-blue">
-                  R$ {stats.totalRevenue.toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-red-50 p-4 rounded-lg text-center">
-                <h3 className="text-sm font-medium text-gray-500">Despesas Totais</h3>
-                <p className="text-2xl font-semibold text-red-500">
-                  R$ {stats.totalExpenses.toFixed(2)}
-                </p>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg text-center">
-                <h3 className="text-sm font-medium text-gray-500">Lucro Líquido</h3>
-                <p className="text-2xl font-semibold text-farm-green">
-                  R$ {stats.netProfit.toFixed(2)}
-                </p>
-              </div>
             </div>
           </CardContent>
         </Card>

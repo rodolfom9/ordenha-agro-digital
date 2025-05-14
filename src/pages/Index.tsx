@@ -19,7 +19,7 @@ const Index = () => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Milk className="h-6 w-6 text-farm-green" />
-            <span className="font-semibold text-xl">Farm Milk Monitor</span>
+            <span className="font-semibold text-xl">RMCGEO</span>
           </div>
           <Button onClick={() => navigate("/login")}>Entrar</Button>
         </div>
@@ -120,10 +120,10 @@ const Index = () => {
             <div className="mb-4 md:mb-0">
               <div className="flex items-center space-x-2 mb-2">
                 <Milk className="h-5 w-5 text-white" />
-                <span className="font-semibold">Farm Milk Monitor</span>
+                <span className="font-semibold">RMCGEO</span>
               </div>
               <p className="text-sm text-gray-400">
-                © 2023 Farm Milk Monitor. Todos os direitos reservados.
+                © 2023 RMCGEO. Todos os direitos reservados.
               </p>
             </div>
             <div className="flex space-x-6">

@@ -4,7 +4,6 @@ import SalesForm from "@/components/sales/SalesForm";
 import SalesList from "@/components/sales/SalesList";
 import RevenueChart from "@/components/charts/RevenueChart";
 import { Sale } from "@/types";
-import { mockSales, mockSalesChartData } from "@/utils/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";

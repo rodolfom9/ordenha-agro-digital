@@ -12,7 +12,7 @@ interface SalesFormProps {
 }
 
 const SalesForm = ({ onAddSale }: SalesFormProps) => {
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10));
   const [quantity, setQuantity] = useState("");
   const [pricePerLiter, setPricePerLiter] = useState("");
   const [buyer, setBuyer] = useState("");
@@ -42,13 +42,11 @@ const SalesForm = ({ onAddSale }: SalesFormProps) => {
     
     setIsLoading(true);
     
-    const totalAmount = Number(quantity) * Number(pricePerLiter);
     const { data, error } = await supabase.from("sales").insert({
       date,
-      quantity: Number(quantity),
-      price_per_liter: Number(pricePerLiter),
-      total_amount: totalAmount,
       buyer,
+      quantity: Number(quantity),
+      value: Number(quantity) * Number(pricePerLiter),
       notes: notes || null,
     }).select().single();
     
@@ -66,8 +64,8 @@ const SalesForm = ({ onAddSale }: SalesFormProps) => {
         id: data.id,
         date: data.date,
         quantity: data.quantity,
-        pricePerLiter: data.price_per_liter,
-        totalAmount: data.total_amount,
+        pricePerLiter: Number(pricePerLiter),
+        totalAmount: data.value,
         buyer: data.buyer,
         notes: data.notes,
       });

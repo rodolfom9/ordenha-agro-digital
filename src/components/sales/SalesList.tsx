@@ -25,8 +25,8 @@ const SalesList = ({ sales, onDelete }: SalesListProps) => {
     return `${day}/${month}/${year}`;
   };
 
-  const formatCurrency = (value: number) => {
-    return `R$ ${value.toFixed(2)}`;
+  const formatCurrency = (value: number | undefined) => {
+    return `R$ ${(value ?? 0).toFixed(2)}`;
   };
 
   if (sales.length === 0) {

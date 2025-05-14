@@ -26,8 +26,8 @@ const ExpenseList = ({ expenses, onDelete }: ExpenseListProps) => {
     return `${day}/${month}/${year}`;
   };
 
-  const formatCurrency = (value: number) => {
-    return `R$ ${value.toFixed(2)}`;
+  const formatCurrency = (value: number | undefined) => {
+    return `R$ ${(value ?? 0).toFixed(2)}`;
   };
 
   const getCategoryLabel = (

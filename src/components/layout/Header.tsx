@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { User } from "@/types";
@@ -37,7 +36,7 @@ const Header = () => {
     <header className="flex h-16 items-center px-6 border-b bg-white">
       <div className="flex items-center gap-2 md:hidden">
         <Milk className="h-6 w-6 text-farm-green" />
-        <span className="font-semibold">Farm Milk Monitor</span>
+        <span className="font-semibold">RMCGEO</span>
       </div>
       
       <div className="ml-auto flex items-center gap-4">

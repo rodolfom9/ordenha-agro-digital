@@ -19,7 +19,7 @@ interface ProductionFormProps {
 }
 
 const ProductionForm = ({ onAddProduction }: ProductionFormProps) => {
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10));
   const [quantity, setQuantity] = useState("");
   const [cowCount, setCowCount] = useState("");
   const [quality, setQuality] = useState<"A" | "B" | "C" | "">("");

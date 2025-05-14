@@ -72,7 +72,7 @@ const LoginForm = () => {
         <div className="flex items-center justify-center mb-4">
           <Milk className="h-12 w-12 text-farm-green" />
         </div>
-        <CardTitle className="text-2xl text-center">Farm Milk Monitor</CardTitle>
+        <CardTitle className="text-2xl text-center">RMCGEO</CardTitle>
         <CardDescription className="text-center">
           Entre com suas credenciais para acessar o sistema
         </CardDescription>
